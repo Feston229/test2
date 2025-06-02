@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import sys
 from ollama import ChatResponse, chat
 from app.settings import settings
 
@@ -168,6 +169,17 @@ def query_csv_data(
 
 
 def main():
+    # Check for command line argument
+    if len(sys.argv) < 2:
+        print("Usage: uv run --frozen --no-dev -m app 'Your question here'")
+        print(
+            "Example: uv run --frozen --no-dev -m app 'На какой платформе наибольшее количество фрилансеров - эксперты?'"
+        )
+        sys.exit(1)
+
+    # Get user content from command line argument
+    user_content = sys.argv[1]
+
     # === 1) Read CSV schema and build system prompt dynamically ===
     schema = get_csv_schema()
 
@@ -179,9 +191,6 @@ def main():
         "based on CSV file content. Use query_csv_data to fetch and analyze CSV data "
         f"CSV schema: {schema} CSV total rows: {total_rows} "
     )
-    # user_content = "На какой платформе наибольшее количество фрилансеров - эксперты ?"
-    # user_content = "Как платформа влияет на заработок фрилансеров ?"
-    user_content = "Какой процент фрилансеров, считающих себя экспертами, выполнил менее 100 проектов?"
 
     messages = [
         {
@@ -193,6 +202,7 @@ def main():
             "content": user_content,
         },
     ]
+
     query_csv_data_tool = {
         "type": "function",
         "function": {
@@ -232,7 +242,7 @@ def main():
         },
     }
 
-    print("=== Sending initial prompt to Ollama ===")
+    print(f"=== Processing query: {user_content} ===")
     response: ChatResponse = chat(
         model=settings.model,
         messages=messages,
@@ -263,7 +273,6 @@ def main():
         print("   Function output:", tool_output)
 
         # 4) Append the assistant's 'function_call' message to messages
-        print(response.message)
         messages.append({
             "role": "assistant",
             "content": None,
@@ -278,7 +287,7 @@ def main():
             "content": json.dumps(tool_output, ensure_ascii=False),
         })
 
-    # === 6) Send a follow-up chat to get the model’s final answer ===
+    # === 6) Send a follow-up chat to get the model's final answer ===
     final_response: ChatResponse = chat(model=settings.model, messages=messages)
 
     print("\n=== Final response from model: ===")

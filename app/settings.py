@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     env: Literal["local", "stage", "prod"]
+
     model: str = "qwen3:8b"
     csv_path: str = "data/data.csv"
 

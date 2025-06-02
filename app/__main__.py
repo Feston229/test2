@@ -53,7 +53,10 @@ def query_csv_data(
 
     Args:
         select: List of columns to select
-        where: Dictionary for filtering, e.g. {"Payment_Method": "Crypto", "Client_Region": "Asia"}
+        where: Dictionary for filtering, supports:
+               - Direct equality: {"Payment_Method": "Crypto"}
+               - List membership: {"Client_Region": ["Asia", "Europe"]}
+               - Comparison operators: {"Job_Completed": {"$lt": 100}, "Earnings_USD": {"$gte": 5000}}
         group_by: List of columns to group by
         agg: Dictionary of aggregations, e.g. {"Income": ["mean", "count"], "Projects_Completed": "sum"}
         sort_by: Column to sort by
@@ -69,7 +72,30 @@ def query_csv_data(
     if where:
         for col, value in where.items():
             if col in df.columns:
-                if isinstance(value, list):
+                if isinstance(value, dict):
+                    # Handle comparison operators
+                    for operator, operand in value.items():
+                        if operator == "$lt":
+                            df = df[df[col] < operand]
+                        elif operator == "$lte":
+                            df = df[df[col] <= operand]
+                        elif operator == "$gt":
+                            df = df[df[col] > operand]
+                        elif operator == "$gte":
+                            df = df[df[col] >= operand]
+                        elif operator == "$ne":
+                            df = df[df[col] != operand]
+                        elif operator == "$eq":
+                            df = df[df[col] == operand]
+                        elif operator == "$in":
+                            df = df[df[col].isin(operand)]
+                        elif operator == "$nin":
+                            df = df[~df[col].isin(operand)]
+                        else:
+                            print(
+                                f"Warning: Unsupported operator '{operator}' for column '{col}'"
+                            )
+                elif isinstance(value, list):
                     df = df[df[col].isin(value)]
                 else:
                     df = df[df[col] == value]
@@ -153,7 +179,9 @@ def main():
         "based on CSV file content. Use query_csv_data to fetch and analyze CSV data "
         f"CSV schema: {schema} CSV total rows: {total_rows} "
     )
-    user_content = "На какой платформе наибольшее количество фрилансеров - эксперты ?"
+    # user_content = "На какой платформе наибольшее количество фрилансеров - эксперты ?"
+    # user_content = "Как платформа влияет на заработок фрилансеров ?"
+    user_content = "Какой процент фрилансеров, считающих себя экспертами, выполнил менее 100 проектов?"
 
     messages = [
         {
@@ -180,7 +208,7 @@ def main():
                     },
                     "where": {
                         "type": "object",
-                        "description": 'Filter conditions, e.g. {"Payment_Method": "Crypto", "Platform": "Fiverr", "Marketing_Spent": {"$lt": 100} }',
+                        "description": 'Filter conditions. Supports equality: {"Platform": "Fiverr"}, lists: {"Platform": ["Fiverr", "Upwork"]}, and operators: {"Job_Completed": {"$lt": 100}, "Earnings_USD": {"$gte": 5000}}. Operators: $lt, $lte, $gt, $gte, $ne, $eq, $in, $nin',
                     },
                     "group_by": {
                         "type": "array",

@@ -27,7 +27,7 @@ Run app with uv `the best python package and project manager`:
 
 ```bash
 uv sync --frozen --no-dev --compile-bytecode  # Create .venv and compile bytecode for faster inference
-uv run --frozen --no-dev app/main.py
+uv run --frozen --no-dev -m app "Как платформа влияет на заработок фрилансеров ?"
 ```
 
 ## Why Ollama and func calls

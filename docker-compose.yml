@@ -1,0 +1,8 @@
+services:
+  ollama:
+    image: 
+
+volumes:
+  ollama_data:
+    external: true
+
